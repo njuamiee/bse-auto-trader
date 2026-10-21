@@ -1,0 +1,5 @@
+pkgtype(kind: "executable")
+
+import {
+  "njuamiee/bse_auto_trader" @factors,
+}

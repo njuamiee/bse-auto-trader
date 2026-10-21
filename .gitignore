@@ -1,0 +1,5 @@
+/// Generated build artifacts.
+_build/
+
+/// Generated package interfaces.
+*.generated.mbti
