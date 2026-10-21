@@ -97,73 +97,6 @@ fn index_of(codes : Array[String], code : String) -> Int {
   found
 }
 
-///| Five-day momentum built from the price history itself.
-fn momentum_column(closes : Array[Array[Double]], day : Int, n : Int) -> Array[Double] {
-  let out = Array::make(n, 0.0)
-  let back = if day >= 5 {
-    5
-  } else if day > 0 {
-    1
-  } else {
-    0
-  }
-  if back > 0 {
-    for i in 0..<n {
-      let past = closes[day - back][i]
-      if past > 0.0 {
-        out[i] = (closes[day][i] - past) / past
-      }
-    }
-  }
-  out
-}
-
-///| Realised volatility: spread of the most recent daily returns.
-fn volatility_column(closes : Array[Array[Double]], day : Int, n : Int) -> Array[Double] {
-  let out = Array::make(n, 0.0)
-  if day >= 3 {
-    let back = if day < 5 {
-      day
-    } else {
-      5
-    }
-    for i in 0..<n {
-      let window = Array::make(back, 0.0)
-      for k in 0..<back {
-        let prev = closes[day - back + k][i]
-        if prev > 0.0 {
-          window[k] = (closes[day - back + k + 1][i] - prev) / prev
-        }
-      }
-      out[i] = @factors.sample_std(window)
-    }
-  }
-  out
-}
-
-///| Forward return of the next trading day, used only to score signals.
-fn forward_column(closes : Array[Array[Double]], day : Int, n : Int) -> Array[Double] {
-  let out = Array::make(n, 0.0)
-  if day + 1 < closes.length() {
-    for i in 0..<n {
-      let now = closes[day][i]
-      if now > 0.0 {
-        out[i] = (closes[day + 1][i] - now) / now
-      }
-    }
-  }
-  out
-}
-
-///|
-fn take_days(days : Array[@factors.DaySlice], upto : Int) -> Array[@factors.DaySlice] {
-  let out = Array::make(upto, days[0])
-  for d in 0..<upto {
-    out[d] = days[d]
-  }
-  out
-}
-
 ///|
 fn holding_index(hs : Array[Holding], code : String) -> Int {
   let mut found = -1
@@ -223,21 +156,7 @@ fn shares_of(hs : Array[Holding], codes : Array[String]) -> Array[Int] {
 
 ///|
 fn build_days() -> Array[@factors.DaySlice] {
-  let codes = universe()
-  let closes = close_prices()
-  let turns = turnover_columns()
-  let n = codes.length()
-  let out = Array::make(closes.length(), @factors.new_day(codes, [], [], [], []))
-  for d in 0..<closes.length() {
-    out[d] = @factors.new_day(
-      codes,
-      momentum_column(closes, d, n),
-      turns[d],
-      volatility_column(closes, d, n),
-      forward_column(closes, d, n),
-    )
-  }
-  out
+  @factors.build_days(universe(), close_prices(), turnover_columns())
 }
 
 ///| Fill orders placed the previous evening at today's opening price.
@@ -449,12 +368,7 @@ fn main {
     equity_curve[day] = eq
     risk = @factors.update_state(risk, day, eq, broadths[day], cfg)
 
-    let scores = if day == 0 {
-      @factors.composite(days[day], features, [0.0, 0.0, 0.0], 3.0)
-    } else {
-      let raw = @factors.icir_weights(take_days(days, day), features)
-      @factors.composite(days[day], features, @factors.normalize_weights(raw), 3.0)
-    }
+    let scores = @factors.composite(days[day], features, @factors.weights_before(days, day), 3.0)
     let targets = @factors.top_n(codes, scores, cap)
 
     let sells = plan_sells(book.holdings, targets, closes[day], codes, day, cfg, 5)

@@ -38,6 +38,16 @@ pub fn all_features() -> Array[Feature] {
   [Momentum, Turnover, Volatility]
 }
 
+///| Select one feature by index: 0 momentum, 1 turnover, anything else
+/// volatility. Enum constructors are read-only outside this package.
+pub fn feature(id : Int) -> Feature {
+  match id {
+    0 => Momentum
+    1 => Turnover
+    _ => Volatility
+  }
+}
+
 /// Read one feature column out of a day slice.
 pub fn column(d : DaySlice, f : Feature) -> Array[Double] {
   match f {
