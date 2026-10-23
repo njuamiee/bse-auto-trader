@@ -19,17 +19,25 @@ pub struct PriceTable {
   dates : Array[String]
   codes : Array[String]
   closes : Array[Array[Double]]
+  volumes : Array[Array[Double]]
   missing_cells : Int
 }
 
 ///| Build a price table. Exposed so callers outside the package can build one.
 pub fn new_price_table(
-  dates : Array[String],
-  codes : Array[String],
-  closes : Array[Array[Double]],
-  missing_cells : Int
+  dates~ : Array[String],
+  codes~ : Array[String],
+  closes~ : Array[Array[Double]],
+  volumes~ : Array[Array[Double]],
+  missing_cells~ : Int
 ) -> PriceTable {
-  { dates: dates, codes: codes, closes: closes, missing_cells: missing_cells }
+  {
+    dates: dates,
+    codes: codes,
+    closes: closes,
+    volumes: volumes,
+    missing_cells: missing_cells,
+  }
 }
 
 ///| First-day-first ordering of the dates covered.
@@ -45,6 +53,12 @@ pub fn codes_of(t : PriceTable) -> Array[String] {
 ///| Row `day` of close prices, aligned with `codes_of`.
 pub fn close_row(t : PriceTable, day : Int) -> Array[Double] {
   t.closes[day]
+}
+
+///| Row `day` of traded volumes, aligned with `codes_of`. Zero wherever the
+/// sheet carried no usable volume, which downstream reads as "cannot tell".
+pub fn volume_row(t : PriceTable, day : Int) -> Array[Double] {
+  t.volumes[day]
 }
 
 ///| How many `(day, instrument)` cells ended up without a usable price.
@@ -126,6 +140,7 @@ pub fn load_price_csv(text : String) -> PriceTable {
   let dates_raw = Array::make(nrow, "")
   let codes_raw = Array::make(nrow, "")
   let vals = Array::make(nrow, 0.0)
+  let vols = Array::make(nrow, 0.0)
   let mut k = 0
   let mut i = start
   while i < lines.length() {
@@ -137,6 +152,15 @@ pub fn load_price_csv(text : String) -> PriceTable {
         @string.parse_double(fields[2])
       } catch {
         _ => 0.0
+      }
+      vols[k] = if fields.length() >= 4 {
+        try {
+          @string.parse_double(fields[3])
+        } catch {
+          _ => 0.0
+        }
+      } else {
+        0.0
       }
       k = k + 1
     }
@@ -159,6 +183,21 @@ pub fn load_price_csv(text : String) -> PriceTable {
     }
     r = r + 1
   }
+  let volumes = Array::make(dates.length(), Array::make(0, 0.0))
+  let mut vd = 0
+  while vd < dates.length() {
+    volumes[vd] = Array::make(codes.length(), 0.0)
+    vd = vd + 1
+  }
+  let mut rr = 0
+  while rr < nrow {
+    let di = index_of(dates, dates_raw[rr])
+    let ci = index_of(codes, codes_raw[rr])
+    if di >= 0 && ci >= 0 {
+      volumes[di][ci] = vols[rr]
+    }
+    rr = rr + 1
+  }
   let mut missing = 0
   let mut dd = 0
   while dd < dates.length() {
@@ -171,5 +210,11 @@ pub fn load_price_csv(text : String) -> PriceTable {
     }
     dd = dd + 1
   }
-  new_price_table(dates, codes, closes, missing)
+  new_price_table(
+    dates=dates,
+    codes=codes,
+    closes=closes,
+    volumes=volumes,
+    missing_cells=missing,
+  )
 }

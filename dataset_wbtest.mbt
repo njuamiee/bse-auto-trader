@@ -25,6 +25,25 @@ let bad =
 
 let crlf = "date,code,close\r\n2026-01-02,BJ1,10.0\r\n"
 
+let with_volume =
+  #|date,code,close,volume
+  #|2026-01-02,BJ1,10.0,12000
+  #|2026-01-02,BJ2,20.0,500
+  #|2026-01-05,BJ1,11.0,0
+
+///|
+test "a fourth column is pivoted into volumes" {
+  let t = load_price_csv(with_volume)
+  assert_eq(volume_row(t, 0), [12000.0, 500.0])
+  assert_eq(volume_row(t, 1), [0.0, 0.0])
+}
+
+///|
+test "a sheet without volume yields zero volumes rather than failing" {
+  let t = load_price_csv(sheet)
+  assert_eq(volume_row(t, 0), [0.0, 0.0])
+}
+
 ///|
 test "header row is skipped and shape is detected" {
   let t = load_price_csv(sheet)
