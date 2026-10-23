@@ -16,7 +16,7 @@
 
 ```bash
 moon version
-moon test            # 146 个单元测试
+moon test            # 159 个单元测试
 moon run cmd/main    # 12 个交易日的端到端模拟
 moon run cmd/verify  # 打印全链路中间值，供外部参照实现逐值比对
 moon run cmd/backtest # 解析一张价格表，跑完整回测并给出归因
@@ -67,6 +67,7 @@ BJ873693,SELL,5300,25.5
 | `benchmark.mbt` | 每日再平衡等权篮子与超额收益、跟踪误差、信息比率 |
 | `attribution.mbt` | 最大回撤起止与是否修复，个券贡献拆解 |
 | `walkforward.mbt` | 滚动多折切分，训练与评价之间留出禁运间隔 |
+| `constraints.mbt` | 行业集中度上限：超限的组整体按比例缩减，多出的部分留作现金 |
 | `cmd/main/main.mbt` | 12 日端到端模拟 |
 | `cmd/verify/main.mbt` | 全链路中间值诊断输出（`SCALAR` / `SERIES` / `CODE` 行） |
 | `cmd/backtest/main.mbt` | 吃一张价格表，跑完整回测并输出指标、基准对照与归因 |
@@ -109,9 +110,9 @@ python tools/bse_crosscheck/run_crosscheck.py   # 在 Python 仓库里跑
 
 | 验收标准 | 状态 |
 | --- | --- |
-| MoonBit 为主 | ✅ 仓库 100% MoonBit：17 个模块共 2146 行 + 1061 行测试 + 3 个可执行命令，无其它语言代码 |
-| 仓库公开 · 持续提交 | ✅ 公开仓库；开发过程保留 commits、Issues 与 PR，逐模块推进 |
-| 能够运行 · 示例 · 测试 | ✅ 三条命令一键运行，无需外部数据；`moon test` 146 个测试全通过 |
+| MoonBit 为主 | ✅ 仓库 100% MoonBit：18 个模块共 2299 行 + 1158 行测试 + 3 个可执行命令，无其它语言代码 |
+| 仓库公开 · 持续提交 | ✅ 公开仓库；开发过程保留 commits、Issues 与 PR（含一个已合并的行业集中度 PR），逐模块推进 |
+| 能够运行 · 示例 · 测试 | ✅ 三条命令一键运行，无需外部数据；`moon test` 159 个测试全通过 |
 | 工作有效（本期实质新增） | ✅ 2026-10-21 从零建成，此后每个模块均为本期新增 |
 | 开源合规 | ✅ MIT，见 [LICENSE](LICENSE)；参考来源见 [项目申报书](项目申报书.md) 第八节 |
 | AI 可解释 | 见下 |
